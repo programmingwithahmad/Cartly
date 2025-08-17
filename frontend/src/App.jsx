@@ -7,7 +7,7 @@ function App() {
     <Router>
       <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
         <div className="container">
-          <Link className="navbar-brand" to="/">MyShop</Link>
+          <Link className="navbar-brand" to="/">Cartly</Link>
           <div className="collapse navbar-collapse">
             <ul className="navbar-nav ms-auto">
               <li className="nav-item">
