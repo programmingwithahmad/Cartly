@@ -30,7 +30,7 @@ app.use('/api/products', productRoutes);
  
 //rest api            
 app.get('/', (req, res) => {
-    res.send('My Shop');
+    res.send('Cartly');
 })  
 
 
