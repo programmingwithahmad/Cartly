@@ -16,7 +16,7 @@ const AdminProductTable = ({ products, onEdit, onDelete }) => (
             <td>{product.category}</td>
             <td>${product.price}</td>
             <td>
-              <img src={`http://localhost:3000/uploads/${product.image}`} alt="Product" width="50" />
+              <img src={product.image} alt="Product" width="50" />
             </td>
             <td>
               <button
