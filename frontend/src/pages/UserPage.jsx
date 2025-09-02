@@ -5,11 +5,28 @@ import FilterBar from '../components/FilterBar.jsx';
 
 const UserPage = () => {
   const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const fetchProducts = async (filters = {}) => {
-    const query = new URLSearchParams(filters).toString();
-    const res = await axios.get(`/products?${query}`);
-    setProducts(res.data);
+    try {
+      setLoading(true);
+
+      // Clean up empty filter values before sending
+      const queryObj = {};
+      for (let key in filters) {
+        if (filters[key] !== '' && filters[key] !== null) {
+          queryObj[key] = filters[key];
+        }
+      }
+
+      const query = new URLSearchParams(queryObj).toString();
+      const res = await axios.get(`/products?${query}`);
+      setProducts(res.data);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -18,15 +35,20 @@ const UserPage = () => {
 
   return (
     <div className="w-full border">
-      <h2 className='text-center mt-5'>All Products</h2>
+      <h2 className="text-center mt-5">All Products</h2>
       <FilterBar onFilter={fetchProducts} />
-      <div className="row">
-        {products.length ? (
-          products.map((p) => <UserProductCard key={p._id} product={p} />)
-        ) : (
-          <p className="text-center mt-4">No products found.</p>
-        )}
-      </div>
+
+      {loading ? (
+        <p className="text-center mt-4">Loading products...</p>
+      ) : (
+        <div className="row">
+          {products.length ? (
+            products.map((p) => <UserProductCard key={p._id} product={p} />)
+          ) : (
+            <p className="text-center mt-4">No products found.</p>
+          )}
+        </div>
+      )}
     </div>
   );
 };

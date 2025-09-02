@@ -1,19 +1,28 @@
-import Product from "../models/productModel.js";
+import Product from '../models/productModel.js';
 import { v2 as cloudinary } from "cloudinary";
-import streamifier from "streamifier";
 
-// Helper function to upload buffer to Cloudinary
-const uploadToCloudinary = (fileBuffer, folder = "products") => {
+// ✅ Cloudinary config
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// ✅ Helper function for Cloudinary upload
+const uploadToCloudinary = (buffer) => {
   return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream({ folder }, (error, result) => {
-      if (error) return reject(error);
-      resolve(result);
-    });
-    streamifier.createReadStream(fileBuffer).pipe(stream);
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: "products" },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result);
+      }
+    );
+    stream.end(buffer);
   });
 };
 
-// Create Product
+// 📌 Create product
 export const createProduct = async (req, res) => {
   try {
     const { name, category, price } = req.body;
@@ -24,54 +33,57 @@ export const createProduct = async (req, res) => {
       imageUrl = uploadResult.secure_url;
     }
 
-    const newProduct = new Product({ name, category, price, image: imageUrl });
-    await newProduct.save();
-    res.status(201).json(newProduct);
+    const product = new Product({ name, category, price, image: imageUrl });
+    await product.save();
+
+    res.status(201).json(product);
   } catch (err) {
-    res.status(500).json({ error: "Failed to create product" });
+    console.error("Error in createProduct:", err);
+    res.status(500).json({ error: "Failed to create product", details: err.message });
   }
 };
 
-// Get All or Filtered Products
+// 📌 Get all products
 export const getProducts = async (req, res) => {
   try {
-    const { category, name, min, max } = req.query;
-    const filter = {};
-
-    if (category) filter.category = category;
-    if (name) filter.name = new RegExp(name, "i");
-    if (min && max) filter.price = { $gte: min, $lte: max };
-
-    const products = await Product.find(filter);
+    const products = await Product.find();
     res.json(products);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch products" });
   }
 };
 
-// Update Product
+// 📌 Update product
 export const updateProduct = async (req, res) => {
   try {
+    const { id } = req.params;
     const { name, category, price } = req.body;
-    const updateData = { name, category, price };
+    let imageUrl;
 
     if (req.file) {
       const uploadResult = await uploadToCloudinary(req.file.buffer);
-      updateData.image = uploadResult.secure_url;
+      imageUrl = uploadResult.secure_url;
     }
 
-    const product = await Product.findByIdAndUpdate(req.params.id, updateData, { new: true });
-    res.json(product);
+    const updatedProduct = await Product.findByIdAndUpdate(
+      id,
+      { name, category, price, ...(imageUrl && { image: imageUrl }) },
+      { new: true }
+    );
+
+    res.json(updatedProduct);
   } catch (err) {
-    res.status(500).json({ error: "Failed to update product" });
+    console.error("Error in updateProduct:", err);
+    res.status(500).json({ error: "Failed to update product", details: err.message });
   }
 };
 
-// Delete Product
+// 📌 Delete product
 export const deleteProduct = async (req, res) => {
   try {
-    await Product.findByIdAndDelete(req.params.id);
-    res.json({ message: "Product deleted" });
+    const { id } = req.params;
+    await Product.findByIdAndDelete(id);
+    res.json({ message: "Product deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: "Failed to delete product" });
   }
